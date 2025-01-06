@@ -1,20 +1,19 @@
 import streamlit as st
 import PyPDF2
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.embeddings import HuggingFaceEmbeddings
-from langchain.vectorstores import Chroma
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.vectorstores import Chroma
 from transformers import pipeline
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 import torch
 import os
 
 class ShireAIAssistant:
     def __init__(self):
-        # Initialize the AI model
+        # Initialize the AI model - using a smaller model without device mapping
         self.model = pipeline(
             "text2text-generation",
-            model="google/flan-t5-large",
-            torch_dtype=torch.bfloat16,
-            device_map="auto"
+            model="google/flan-t5-base",
+            torch_dtype=torch.float32,
         )
         
         # Initialize embeddings
@@ -22,8 +21,8 @@ class ShireAIAssistant:
             model_name="sentence-transformers/all-mpnet-base-v2"
         )
         
-        # Load and process style guide
-        self.vector_store = self.initialize_knowledge_base()
+        # Initialize vector store
+        self.vector_store = None
     
     def load_style_guide(self):
         """Load and process the PDF style guide"""
@@ -48,15 +47,16 @@ class ShireAIAssistant:
         chunks = self.load_style_guide()
         
         # Create vector store
-        vector_store = Chroma.from_texts(
+        self.vector_store = Chroma.from_texts(
             texts=chunks,
             embedding=self.embeddings
         )
-        
-        return vector_store
     
     def get_relevant_guidelines(self, text: str, k: int = 3):
         """Retrieve relevant style guide sections"""
+        if not self.vector_store:
+            return "Style guide not loaded. Please initialize the knowledge base first."
+        
         docs = self.vector_store.similarity_search(text, k=k)
         return "\n".join([doc.page_content for doc in docs])
     
@@ -80,22 +80,18 @@ class ShireAIAssistant:
         - List specific improvements
         
         IMPROVED VERSION:
-        - The rewritten text following the style guide
+        - The rewritten text following the style guide"""
 
-        Be specific and reference the style guide in your suggestions."""
-
-        # Generate AI response
+        # Generate response
         response = self.model(
             prompt,
-            max_new_tokens=1024,
-            temperature=0.7,
-            do_sample=True
+            max_length=512,
+            num_return_sequences=1,
+            temperature=0.7
         )[0]['generated_text']
         
         # Parse response sections
-        sections = self.parse_response(response)
-        
-        return sections
+        return self.parse_response(response)
     
     def parse_response(self, response: str) -> dict:
         """Parse the AI response into structured feedback"""
@@ -130,6 +126,11 @@ def main():
     if 'assistant' not in st.session_state:
         with st.spinner("Initializing AI assistant..."):
             st.session_state.assistant = ShireAIAssistant()
+            try:
+                st.session_state.assistant.initialize_knowledge_base()
+                st.success("Style guide loaded successfully!")
+            except Exception as e:
+                st.error(f"Error loading style guide: {str(e)}")
     
     # Text input
     text = st.text_area(

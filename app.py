@@ -1,3 +1,9 @@
+from huggingface_hub import hf_hub_download
+import huggingface_hub
+
+# Patch to add backward compatibility for cached_download
+if not hasattr(huggingface_hub, "cached_download"):
+    huggingface_hub.cached_download = hf_hub_download
 import streamlit as st
 import PyPDF2
 import toml

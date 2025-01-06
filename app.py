@@ -11,7 +11,7 @@ import os
 class ShireAIAssistant:
     def __init__(self):
         # Load configuration
-        config = toml.load("config.toml")
+        config = toml.load(".streamlit/config.toml")
         self.style_guide_path = config["data"]["style_guide_path"]
 
         # Initialize the AI model

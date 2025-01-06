@@ -11,8 +11,8 @@ class ShireAIAssistant:
     def __init__(self):
         # Initialize the AI model
         self.model = pipeline(
-            "text-generation",
-            model="mistralai/Mixtral-8x7B-Instruct-v0.1",
+            "text2text-generation",
+            model="google/flan-t5-large",
             torch_dtype=torch.bfloat16,
             device_map="auto"
         )

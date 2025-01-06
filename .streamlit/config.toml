@@ -1,7 +1,2 @@
-[app]
-title = "Shire AI Style Assistant"
-description = "AI-driven style guide companion for Mornington Peninsula Shire"
-
 [data]
 style_guide_path = "data/Shire style guide.pdf"
-
